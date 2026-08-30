@@ -24,6 +24,7 @@
       <h1 class="game-title">Memory Match</h1>
       <p class="tagline">Test your memory. Find the pairs.</p>
       <button id="play-btn" class="btn-primary">▶ Play</button>
+      <button id="install-btn-start" style="display:none; margin-top: 10px;" class="btn-primary">📲 Install App</button>
       <p class="version">v2.0</p>
     </div>
   </div>
@@ -65,6 +66,7 @@
 
       <button id="start-game-btn" class="btn-primary">🚀 Start Game</button>
       <button id="back-to-start-btn" class="btn-secondary">← Back</button>
+      <button id="install-btn-setup" style="display:none; margin-top: 10px;" class="btn-primary">📲 Install App</button>
     </div>
   </div>
 
@@ -89,7 +91,7 @@
         </div>
       </div>
 
-      <!-- Game Board (centered) -->
+      <!-- Game Board -->
       <div id="game-board-wrapper">
         <div id="game-board"></div>
       </div>
@@ -107,19 +109,19 @@
         <button id="back-to-setup-btn" class="btn-secondary">← Setup</button>
       </div>
 
-      <!-- INSTALL BUTTON – shows when PWA is ready -->
+      <!-- Install button on game page -->
       <button id="install-btn" style="display:none; margin-top: 15px; width: 100%;" class="btn-primary">📲 Install App</button>
     </div>
   </div>
 
   <!-- ============================================ -->
-  <!-- SCRIPTS (LOAD IN CORRECT ORDER)           -->
+  <!-- SCRIPTS                                     -->
   <!-- ============================================ -->
-  
-  <!-- 1. Game logic first -->
+
+  <!-- Game logic -->
   <script src="app.js"></script>
 
-  <!-- 2. Service Worker registration -->
+  <!-- Service Worker -->
   <script>
     if ('serviceWorker' in navigator) {
       navigator.serviceWorker.register('/memory-match/sw.js')
@@ -128,35 +130,36 @@
     }
   </script>
 
-  <!-- 3. Install prompt handler (with custom button) -->
+  <!-- Install Prompt Handler -->
   <script>
     let deferredPrompt;
-    const installBtn = document.getElementById('install-btn');
+    const installBtnStart = document.getElementById('install-btn-start');
+    const installBtnSetup = document.getElementById('install-btn-setup');
+    const installBtnGame = document.getElementById('install-btn');
+    const allInstallBtns = [installBtnStart, installBtnSetup, installBtnGame].filter(b => b !== null);
 
     window.addEventListener('beforeinstallprompt', (e) => {
-      // Prevent the mini-infobar from appearing on mobile
       e.preventDefault();
-      // Stash the event so it can be triggered later
       deferredPrompt = e;
       console.log('✅ Install prompt ready');
-      // Show the custom install button
-      installBtn.style.display = 'block';
+      allInstallBtns.forEach(btn => btn.style.display = 'block');
     });
 
-    // When user clicks the install button
-    installBtn.addEventListener('click', async () => {
-      if (deferredPrompt) {
-        deferredPrompt.prompt();
-        const result = await deferredPrompt.userChoice;
-        console.log(`User chose: ${result.outcome}`);
-        deferredPrompt = null;
-        installBtn.style.display = 'none';
-      }
+    allInstallBtns.forEach(btn => {
+      btn.addEventListener('click', async () => {
+        if (deferredPrompt) {
+          deferredPrompt.prompt();
+          const result = await deferredPrompt.userChoice;
+          console.log(`User chose: ${result.outcome}`);
+          deferredPrompt = null;
+          allInstallBtns.forEach(b => b.style.display = 'none');
+        }
+      });
     });
 
     window.addEventListener('appinstalled', () => {
       console.log('✅ App installed');
-      installBtn.style.display = 'none';
+      allInstallBtns.forEach(btn => btn.style.display = 'none');
     });
   </script>
 
