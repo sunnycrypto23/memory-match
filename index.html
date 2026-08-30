@@ -4,8 +4,8 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Memory Match</title>
-<link rel="manifest" href="manifest.json">
-<meta name="theme-color" content="#ffd700">
+  <link rel="manifest" href="manifest.json">
+  <meta name="theme-color" content="#ffd700">
   <link rel="stylesheet" href="style.css">
 </head>
 <body>
@@ -34,7 +34,7 @@
   <div id="setup-page" class="page">
     <div class="setup-content">
       <h2>⚙️ Game Setup</h2>
-      
+
       <div class="setup-group">
         <label>Mode</label>
         <div class="option-group" id="mode-options">
@@ -106,35 +106,59 @@
         <button id="reset-btn" class="btn-primary">🔄 New Game</button>
         <button id="back-to-setup-btn" class="btn-secondary">← Setup</button>
       </div>
+
+      <!-- INSTALL BUTTON – shows when PWA is ready -->
+      <button id="install-btn" style="display:none; margin-top: 15px; width: 100%;" class="btn-primary">📲 Install App</button>
     </div>
   </div>
-<script>
-  if ('serviceWorker' in navigator) {
-    navigator.serviceWorker.register('/memory-match/sw.js')
-      .then(() => console.log('✅ Service Worker registered'))
-      .catch((err) => console.error('❌ Service Worker registration failed:', err));
-  }
-</script>
+
+  <!-- ============================================ -->
+  <!-- SCRIPTS (LOAD IN CORRECT ORDER)           -->
+  <!-- ============================================ -->
+  
+  <!-- 1. Game logic first -->
+  <script src="app.js"></script>
+
+  <!-- 2. Service Worker registration -->
   <script>
-  // Trigger the install prompt (optional)
-  let deferredPrompt;
-
-  window.addEventListener('beforeinstallprompt', (e) => {
-    // Prevent the mini-infobar from appearing on mobile
-    e.preventDefault();
-    // Stash the event so it can be triggered later
-    deferredPrompt = e;
-    console.log('✅ Install prompt ready');
-    
-    // Optionally show a custom install button
-    // We'll use this later if needed
-  });
-
-  window.addEventListener('appinstalled', () => {
-    console.log('✅ App installed');
-  });
+    if ('serviceWorker' in navigator) {
+      navigator.serviceWorker.register('/memory-match/sw.js')
+        .then(() => console.log('✅ Service Worker registered'))
+        .catch((err) => console.error('❌ Service Worker registration failed:', err));
+    }
   </script>
 
-  <script src="app.js"></script>
+  <!-- 3. Install prompt handler (with custom button) -->
+  <script>
+    let deferredPrompt;
+    const installBtn = document.getElementById('install-btn');
+
+    window.addEventListener('beforeinstallprompt', (e) => {
+      // Prevent the mini-infobar from appearing on mobile
+      e.preventDefault();
+      // Stash the event so it can be triggered later
+      deferredPrompt = e;
+      console.log('✅ Install prompt ready');
+      // Show the custom install button
+      installBtn.style.display = 'block';
+    });
+
+    // When user clicks the install button
+    installBtn.addEventListener('click', async () => {
+      if (deferredPrompt) {
+        deferredPrompt.prompt();
+        const result = await deferredPrompt.userChoice;
+        console.log(`User chose: ${result.outcome}`);
+        deferredPrompt = null;
+        installBtn.style.display = 'none';
+      }
+    });
+
+    window.addEventListener('appinstalled', () => {
+      console.log('✅ App installed');
+      installBtn.style.display = 'none';
+    });
+  </script>
+
 </body>
 </html>
