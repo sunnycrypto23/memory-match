@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Generate Icons</title>
+</head>
+<body>
+  <h1>Generate Memory Match Icons</h1>
+  <button id="generate">Generate Icons</button>
+  <script>
+    document.getElementById('generate').addEventListener('click', function() {
+      const sizes = [
+        { size: 192, name: 'icon-192.png' },
+        { size: 512, name: 'icon-512.png' }
+      ];
+      
+      sizes.forEach(({ size, name }) => {
+        const canvas = document.createElement('canvas');
+        canvas.width = size;
+        canvas.height = size;
+        const ctx = canvas.getContext('2d');
+        
+        // Gradient background
+        const gradient = ctx.createLinearGradient(0, 0, size, size);
+        gradient.addColorStop(0, '#f7971e');
+        gradient.addColorStop(1, '#ffd200');
+        ctx.fillStyle = gradient;
+        ctx.fillRect(0, 0, size, size);
+        
+        // "🎴" emoji in center
+        ctx.font = `${size * 0.6}px Arial`;
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        ctx.fillText('🎴', size / 2, size / 2);
+        
+        // Download
+        const link = document.createElement('a');
+        link.download = name;
+        link.href = canvas.toDataURL('image/png');
+        link.click();
+      });
+    });
+  </script>
+</body>
+</html>
