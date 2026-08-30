@@ -1,7 +1,11 @@
 // ========== CONFIGURATION ==========
-const EMOJIS = ['🎮', '🎯', '🎲', '🎨', '🎭', '🎪', '🎤', '🎵'];
-const TOTAL_PAIRS = 8;
-const TOTAL_CARDS = TOTAL_PAIRS * 2;
+const EMOJIS = ['🎮', '🎯', '🎲', '🎨', '🎭', '🎪', '🎤', '🎵', '🐱', '🐶', '🐰', '🦊', '🐼', '🐨', '🐯', '🦁', '🐮', '🐷', '🐸', '🐵'];
+
+const DIFFICULTY_CONFIG = {
+  easy:   { cols: 4, pairs: 8 },   // 4×4 = 16 cards
+  medium: { cols: 4, pairs: 12 },  // 4×6 = 24 cards
+  hard:   { cols: 6, pairs: 18 }   // 6×6 = 36 cards
+};
 
 // ========== SOUND MANAGER ==========
 const SoundManager = {
@@ -81,7 +85,6 @@ function createConfetti() {
     container.appendChild(el);
   }
 
-  // Add keyframes once
   if (!document.getElementById('confetti-style')) {
     const style = document.createElement('style');
     style.id = 'confetti-style';
@@ -94,7 +97,6 @@ function createConfetti() {
     document.head.appendChild(style);
   }
 
-  // Cleanup after animation
   setTimeout(() => {
     document.querySelectorAll('[style*="confettiFall"]').forEach(el => el.remove());
   }, 4000);
@@ -104,11 +106,13 @@ function createConfetti() {
 let cards = [];
 let flippedCards = [];
 let matchedPairs = 0;
+let totalPairs = 8;
 let moves = 0;
 let timer = 0;
 let timerInterval = null;
 let isLocked = false;
 let bestScore = localStorage.getItem('memoryMatchBest') || null;
+let currentDifficulty = 'medium';
 
 // ========== DOM REFS ==========
 const board = document.getElementById('game-board');
@@ -116,6 +120,7 @@ const movesDisplay = document.getElementById('moves');
 const timerDisplay = document.getElementById('timer');
 const bestScoreDisplay = document.getElementById('best-score');
 const resetBtn = document.getElementById('reset-btn');
+const difficultySelect = document.getElementById('difficulty');
 
 // ========== INIT ==========
 function initGame() {
@@ -131,7 +136,22 @@ function initGame() {
   timerDisplay.textContent = timer;
   bestScoreDisplay.textContent = bestScore ? `${bestScore}s` : '—';
 
-  const deck = [...EMOJIS, ...EMOJIS];
+  // Get difficulty config
+  const config = DIFFICULTY_CONFIG[currentDifficulty];
+  totalPairs = config.pairs;
+  
+  // Set grid columns
+  board.style.gridTemplateColumns = `repeat(${config.cols}, 1fr)`;
+
+  // Select emojis (shuffle and take the needed amount)
+  const shuffledEmojis = shuffle([...EMOJIS]);
+  const selectedEmojis = shuffledEmojis.slice(0, totalPairs);
+  
+  // Duplicate each emoji to make pairs
+  const deck = [];
+  selectedEmojis.forEach(emoji => {
+    deck.push(emoji, emoji);
+  });
   shuffle(deck);
   
   cards = deck.map((emoji, index) => ({
@@ -171,7 +191,7 @@ function renderBoard() {
 
 // ========== GAME LOGIC ==========
 function handleCardClick(id) {
-  if (isLocked || matchedPairs === TOTAL_PAIRS) return;
+  if (isLocked || matchedPairs === totalPairs) return;
 
   const card = cards.find(c => c.id === id);
   if (!card || card.flipped || card.matched) return;
@@ -205,7 +225,7 @@ function handleCardClick(id) {
       isLocked = false;
       renderBoard();
 
-      if (matchedPairs === TOTAL_PAIRS) {
+      if (matchedPairs === totalPairs) {
         clearInterval(timerInterval);
         timerInterval = null;
         updateBestScore();
@@ -236,6 +256,12 @@ function updateBestScore() {
     bestScoreDisplay.textContent = `${bestScore}s`;
   }
 }
+
+// ========== DIFFICULTY CHANGE ==========
+difficultySelect.addEventListener('change', function() {
+  currentDifficulty = this.value;
+  initGame();
+});
 
 // ========== RESET ==========
 resetBtn.addEventListener('click', initGame);
