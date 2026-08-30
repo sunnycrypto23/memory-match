@@ -7,45 +7,105 @@
   <link rel="stylesheet" href="style.css">
 </head>
 <body>
-  <header>
-    <h1>🎴 Memory Match</h1>
-    <div class="stats">
-      <span>Moves: <span id="moves">0</span></span>
-      <span>Time: <span id="timer">0</span>s</span>
-      <span>Best: <span id="best-score">—</span></span>
+  <!-- ============================================ -->
+  <!-- PAGE 1: START PAGE                          -->
+  <!-- ============================================ -->
+  <div id="start-page" class="page active">
+    <div class="start-content">
+      <div class="logo-container">
+        <div class="logo-animation">
+          <span>🎴</span>
+          <span>🧠</span>
+          <span>🎯</span>
+        </div>
+      </div>
+      <h1 class="game-title">Memory Match</h1>
+      <p class="tagline">Test your memory. Find the pairs.</p>
+      <button id="play-btn" class="btn-primary">▶ Play</button>
+      <p class="version">v2.0</p>
     </div>
-    <div class="controls">
-      <label for="difficulty">Difficulty:</label>
-      <select id="difficulty">
-        <option value="easy">Easy (4×4)</option>
-        <option value="medium" selected>Medium (4×6)</option>
-        <option value="hard">Hard (6×6)</option>
-      </select>
+  </div>
 
-      <label for="theme">Theme:</label>
-      <select id="theme">
-        <option value="animals">🐾 Animals</option>
-        <option value="food" selected>🍕 Food</option>
-        <option value="flags">🏳️ Flags</option>
-        <option value="nature">🌿 Nature</option>
-      </select>
+  <!-- ============================================ -->
+  <!-- PAGE 2: SETUP PAGE                         -->
+  <!-- ============================================ -->
+  <div id="setup-page" class="page">
+    <div class="setup-content">
+      <h2>⚙️ Game Setup</h2>
+      
+      <div class="setup-group">
+        <label>Mode</label>
+        <div class="option-group" id="mode-options">
+          <button class="option-btn active" data-value="classic">🎯 Classic</button>
+          <button class="option-btn" data-value="timed">⏱️ Timed</button>
+          <button class="option-btn" data-value="zen">🧘 Zen</button>
+        </div>
+      </div>
+
+      <div class="setup-group">
+        <label>Difficulty</label>
+        <div class="option-group" id="difficulty-options">
+          <button class="option-btn" data-value="easy">Easy (4×4)</button>
+          <button class="option-btn active" data-value="medium">Medium (4×6)</button>
+          <button class="option-btn" data-value="hard">Hard (6×6)</button>
+        </div>
+      </div>
+
+      <div class="setup-group">
+        <label>Theme</label>
+        <div class="option-group" id="theme-options">
+          <button class="option-btn" data-value="animals">🐾 Animals</button>
+          <button class="option-btn active" data-value="food">🍕 Food</button>
+          <button class="option-btn" data-value="flags">🏳️ Flags</button>
+          <button class="option-btn" data-value="nature">🌿 Nature</button>
+        </div>
+      </div>
+
+      <button id="start-game-btn" class="btn-primary">🚀 Start Game</button>
+      <button id="back-to-start-btn" class="btn-secondary">← Back</button>
     </div>
-  </header>
+  </div>
 
-  <main>
-    <!-- Game Board -->
-    <div id="game-board"></div>
+  <!-- ============================================ -->
+  <!-- PAGE 3: GAME PAGE                         -->
+  <!-- ============================================ -->
+  <div id="game-page" class="page">
+    <div class="game-container">
+      <!-- Stats -->
+      <div class="game-stats">
+        <div class="stat-item">
+          <span class="stat-label">Moves</span>
+          <span class="stat-value" id="moves">0</span>
+        </div>
+        <div class="stat-item">
+          <span class="stat-label">Time</span>
+          <span class="stat-value" id="timer">0</span>
+        </div>
+        <div class="stat-item">
+          <span class="stat-label">Best</span>
+          <span class="stat-value" id="best-score">—</span>
+        </div>
+      </div>
 
-    <!-- Power-ups -->
-    <div class="powerups">
-      <button id="peek-btn" class="powerup-btn" disabled>👀 Peek (2)</button>
-      <button id="time-btn" class="powerup-btn" disabled>⏱️ +5s (2)</button>
-      <button id="hint-btn" class="powerup-btn" disabled>💡 Hint (1)</button>
+      <!-- Game Board (centered) -->
+      <div id="game-board-wrapper">
+        <div id="game-board"></div>
+      </div>
+
+      <!-- Power-ups -->
+      <div class="powerups">
+        <button id="peek-btn" class="powerup-btn" disabled>👀 Peek (2)</button>
+        <button id="time-btn" class="powerup-btn" disabled>⏱️ +5s (2)</button>
+        <button id="hint-btn" class="powerup-btn" disabled>💡 Hint (1)</button>
+      </div>
+
+      <!-- Controls -->
+      <div class="game-controls">
+        <button id="reset-btn" class="btn-primary">🔄 New Game</button>
+        <button id="back-to-setup-btn" class="btn-secondary">← Setup</button>
+      </div>
     </div>
-
-    <!-- Reset Button -->
-    <button id="reset-btn">🔄 New Game</button>
-  </main>
+  </div>
 
   <script src="app.js"></script>
 </body>
