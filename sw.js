@@ -1,16 +1,16 @@
 // ========== SERVICE WORKER ==========
 const CACHE_NAME = 'memory-match-v1';
 const ASSETS = [
-  '.',
-  'index.html',
-  'style.css',
-  'app.js',
-  'manifest.json',
-  'icon-192.png',
-  'icon-512.png'
+  '/memory-match/',
+  '/memory-match/index.html',
+  '/memory-match/style.css',
+  '/memory-match/app.js',
+  '/memory-match/manifest.json',
+  '/memory-match/icon-192.png',
+  '/memory-match/icon-512.png'
 ];
 
-// Install – cache assets
+// Install
 self.addEventListener('install', (event) => {
   event.waitUntil(
     caches.open(CACHE_NAME)
@@ -19,7 +19,7 @@ self.addEventListener('install', (event) => {
   );
 });
 
-// Activate – clean old caches
+// Activate
 self.addEventListener('activate', (event) => {
   event.waitUntil(
     caches.keys()
@@ -31,15 +31,13 @@ self.addEventListener('activate', (event) => {
   );
 });
 
-// Fetch – serve from cache, fallback to network
+// Fetch
 self.addEventListener('fetch', (event) => {
   event.respondWith(
     caches.match(event.request)
       .then((cached) => {
-        // Return cached version if found, otherwise fetch from network
         return cached || fetch(event.request)
           .then((response) => {
-            // Cache new responses for future
             const responseClone = response.clone();
             caches.open(CACHE_NAME)
               .then((cache) => cache.put(event.request, responseClone));
@@ -47,8 +45,10 @@ self.addEventListener('fetch', (event) => {
           });
       })
       .catch(() => {
-        // If both cache and network fail, show offline page
-        return caches.match('index.html');
+        return caches.match('/memory-match/index.html');
       })
   );
 });
+
+// Remove any message event listeners – we don't need them
+// This avoids the "message event" warning
