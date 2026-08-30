@@ -1,10 +1,15 @@
 // ========== CONFIGURATION ==========
-const EMOJIS = ['🎮', '🎯', '🎲', '🎨', '🎭', '🎪', '🎤', '🎵', '🐱', '🐶', '🐰', '🦊', '🐼', '🐨', '🐯', '🦁', '🐮', '🐷', '🐸', '🐵'];
+const THEMES = {
+  animals: ['🐶', '🐱', '🐰', '🦊', '🐼', '🐨', '🐯', '🦁', '🐮', '🐷', '🐸', '🐵', '🐔', '🐧', '🐦', '🐤', '🐣', '🐥'],
+  food: ['🍕', '🍔', '🌮', '🥗', '🍣', '🍜', '🍝', '🍛', '🍩', '🍪', '🍰', '🧁', '🍫', '🍭', '🍦', '🍧', '🍨', '🍩'],
+  flags: ['🇺🇸', '🇬🇧', '🇫🇷', '🇩🇪', '🇯🇵', '🇨🇳', '🇮🇳', '🇧🇷', '🇦🇺', '🇨🇦', '🇮🇹', '🇪🇸', '🇲🇽', '🇰🇷', '🇷🇺', '🇿🇦', '🇳🇬', '🇰🇪'],
+  nature: ['🌺', '🌸', '🌻', '🌷', '🌹', '🌿', '🍃', '🌱', '🌲', '🌳', '🌵', '🌴', '☀️', '🌈', '⛅', '🌊', '❄️', '🔥']
+};
 
 const DIFFICULTY_CONFIG = {
-  easy:   { cols: 4, pairs: 8 },   // 4×4 = 16 cards
-  medium: { cols: 4, pairs: 12 },  // 4×6 = 24 cards
-  hard:   { cols: 6, pairs: 18 }   // 6×6 = 36 cards
+  easy:   { cols: 4, pairs: 8 },
+  medium: { cols: 4, pairs: 12 },
+  hard:   { cols: 6, pairs: 18 }
 };
 
 // ========== SOUND MANAGER ==========
@@ -113,6 +118,14 @@ let timerInterval = null;
 let isLocked = false;
 let bestScore = localStorage.getItem('memoryMatchBest') || null;
 let currentDifficulty = 'medium';
+let currentTheme = 'food';
+
+// Power-up state
+let peekCount = 2;
+let timeCount = 2;
+let hintCount = 1;
+let isPeeking = false;
+let hintTimeout = null;
 
 // ========== DOM REFS ==========
 const board = document.getElementById('game-board');
@@ -121,6 +134,10 @@ const timerDisplay = document.getElementById('timer');
 const bestScoreDisplay = document.getElementById('best-score');
 const resetBtn = document.getElementById('reset-btn');
 const difficultySelect = document.getElementById('difficulty');
+const themeSelect = document.getElementById('theme');
+const peekBtn = document.getElementById('peek-btn');
+const timeBtn = document.getElementById('time-btn');
+const hintBtn = document.getElementById('hint-btn');
 
 // ========== INIT ==========
 function initGame() {
@@ -131,23 +148,30 @@ function initGame() {
   flippedCards = [];
   isLocked = false;
   timerInterval = null;
+  
+  // Reset power-ups
+  peekCount = 2;
+  timeCount = 2;
+  hintCount = 1;
+  isPeeking = false;
+  if (hintTimeout) {
+    clearTimeout(hintTimeout);
+    hintTimeout = null;
+  }
 
   movesDisplay.textContent = moves;
   timerDisplay.textContent = timer;
   bestScoreDisplay.textContent = bestScore ? `${bestScore}s` : '—';
+  updatePowerupButtons();
 
-  // Get difficulty config
   const config = DIFFICULTY_CONFIG[currentDifficulty];
   totalPairs = config.pairs;
-  
-  // Set grid columns
   board.style.gridTemplateColumns = `repeat(${config.cols}, 1fr)`;
 
-  // Select emojis (shuffle and take the needed amount)
-  const shuffledEmojis = shuffle([...EMOJIS]);
+  const themeEmojis = THEMES[currentTheme];
+  const shuffledEmojis = shuffle([...themeEmojis]);
   const selectedEmojis = shuffledEmojis.slice(0, totalPairs);
   
-  // Duplicate each emoji to make pairs
   const deck = [];
   selectedEmojis.forEach(emoji => {
     deck.push(emoji, emoji);
@@ -189,9 +213,106 @@ function renderBoard() {
   });
 }
 
+// ========== POWER-UP HELPERS ==========
+function updatePowerupButtons() {
+  peekBtn.textContent = `👀 Peek (${peekCount})`;
+  peekBtn.disabled = peekCount <= 0 || isPeeking;
+  
+  timeBtn.textContent = `⏱️ +5s (${timeCount})`;
+  timeBtn.disabled = timeCount <= 0;
+  
+  hintBtn.textContent = `💡 Hint (${hintCount})`;
+  hintBtn.disabled = hintCount <= 0;
+}
+
+// ========== POWER-UP: PEEK ==========
+function usePeek() {
+  if (isPeeking || peekCount <= 0) return;
+  if (matchedPairs === totalPairs) return;
+
+  peekCount--;
+  isPeeking = true;
+  updatePowerupButtons();
+
+  // Flip all unmatched cards
+  cards.forEach(card => {
+    if (!card.matched && !card.flipped) {
+      card.flipped = true;
+    }
+  });
+  renderBoard();
+
+  // Flip them back after 1.5 seconds
+  setTimeout(() => {
+    cards.forEach(card => {
+      if (!card.matched && card.flipped) {
+        card.flipped = false;
+      }
+    });
+    isPeeking = false;
+    renderBoard();
+    updatePowerupButtons();
+  }, 1500);
+}
+
+// ========== POWER-UP: EXTRA TIME ==========
+function useExtraTime() {
+  if (timeCount <= 0) return;
+  if (matchedPairs === totalPairs) return;
+
+  timeCount--;
+  timer += 5;
+  timerDisplay.textContent = timer;
+  updatePowerupButtons();
+  
+  // Visual feedback
+  timeBtn.style.borderColor = '#48dbfb';
+  setTimeout(() => {
+    timeBtn.style.borderColor = '';
+  }, 500);
+}
+
+// ========== POWER-UP: HINT ==========
+function useHint() {
+  if (hintCount <= 0) return;
+  if (matchedPairs === totalPairs) return;
+  if (isLocked) return;
+
+  hintCount--;
+  updatePowerupButtons();
+
+  // Find first unmatched pair
+  const unmatched = cards.filter(c => !c.matched && !c.flipped);
+  if (unmatched.length < 2) return;
+
+  // Find two cards with same emoji among unmatched
+  let pair = null;
+  for (let i = 0; i < unmatched.length; i++) {
+    for (let j = i + 1; j < unmatched.length; j++) {
+      if (unmatched[i].emoji === unmatched[j].emoji) {
+        pair = [unmatched[i], unmatched[j]];
+        break;
+      }
+    }
+    if (pair) break;
+  }
+
+  if (!pair) return;
+
+  // Flash the pair
+  pair.forEach(c => c.flipped = true);
+  renderBoard();
+
+  setTimeout(() => {
+    pair.forEach(c => c.flipped = false);
+    renderBoard();
+  }, 1000);
+}
+
 // ========== GAME LOGIC ==========
 function handleCardClick(id) {
   if (isLocked || matchedPairs === totalPairs) return;
+  if (isPeeking) return; // Can't click while peeking
 
   const card = cards.find(c => c.id === id);
   if (!card || card.flipped || card.matched) return;
@@ -257,14 +378,21 @@ function updateBestScore() {
   }
 }
 
-// ========== DIFFICULTY CHANGE ==========
+// ========== EVENT LISTENERS ==========
 difficultySelect.addEventListener('change', function() {
   currentDifficulty = this.value;
   initGame();
 });
 
-// ========== RESET ==========
+themeSelect.addEventListener('change', function() {
+  currentTheme = this.value;
+  initGame();
+});
+
 resetBtn.addEventListener('click', initGame);
+peekBtn.addEventListener('click', usePeek);
+timeBtn.addEventListener('click', useExtraTime);
+hintBtn.addEventListener('click', useHint);
 
 // ========== START ==========
 initGame();
