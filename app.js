@@ -112,6 +112,12 @@ function createConfetti() {
   }, 4000);
 }
 
+// ========== PAGE NAVIGATION ==========
+function showPage(pageId) {
+  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+  document.getElementById(pageId).classList.add('active');
+}
+
 // ========== STATE ==========
 let cards = [];
 let flippedCards = [];
@@ -143,34 +149,45 @@ const movesDisplay = document.getElementById('moves');
 const timerDisplay = document.getElementById('timer');
 const bestScoreDisplay = document.getElementById('best-score');
 const resetBtn = document.getElementById('reset-btn');
-const difficultySelect = document.getElementById('difficulty');
-const themeSelect = document.getElementById('theme');
 const peekBtn = document.getElementById('peek-btn');
 const timeBtn = document.getElementById('time-btn');
 const hintBtn = document.getElementById('hint-btn');
 
-// ========== ADD MODE SELECTOR TO DOM ==========
-// Add this dynamically since we don't want to modify HTML again
-const controlsDiv = document.querySelector('.controls');
-const modeSelect = document.createElement('select');
-modeSelect.id = 'mode';
-modeSelect.innerHTML = `
-  <option value="classic">🎯 Classic</option>
-  <option value="timed">⏱️ Timed</option>
-  <option value="zen">🧘 Zen</option>
-`;
-const modeLabel = document.createElement('label');
-modeLabel.htmlFor = 'mode';
-modeLabel.textContent = 'Mode:';
-controlsDiv.appendChild(modeLabel);
-controlsDiv.appendChild(modeSelect);
+// ========== SETUP OPTIONS ==========
+function setupOptionButtons() {
+  // Mode options
+  document.querySelectorAll('#mode-options .option-btn').forEach(btn => {
+    btn.addEventListener('click', function() {
+      document.querySelectorAll('#mode-options .option-btn').forEach(b => b.classList.remove('active'));
+      this.classList.add('active');
+      currentMode = this.dataset.value;
+    });
+  });
+
+  // Difficulty options
+  document.querySelectorAll('#difficulty-options .option-btn').forEach(btn => {
+    btn.addEventListener('click', function() {
+      document.querySelectorAll('#difficulty-options .option-btn').forEach(b => b.classList.remove('active'));
+      this.classList.add('active');
+      currentDifficulty = this.dataset.value;
+    });
+  });
+
+  // Theme options
+  document.querySelectorAll('#theme-options .option-btn').forEach(btn => {
+    btn.addEventListener('click', function() {
+      document.querySelectorAll('#theme-options .option-btn').forEach(b => b.classList.remove('active'));
+      this.classList.add('active');
+      currentTheme = this.dataset.value;
+    });
+  });
+}
 
 // ========== MODE HELPERS ==========
 function updateModeUI() {
   const isTimed = currentMode === 'timed';
   const isZen = currentMode === 'zen';
   
-  // Timer display
   if (isTimed) {
     timerDisplay.textContent = timeLimit - timer;
   } else if (isZen) {
@@ -179,21 +196,18 @@ function updateModeUI() {
     timerDisplay.textContent = timer;
   }
 
-  // Moves display
   if (isZen) {
     movesDisplay.textContent = '—';
   } else {
     movesDisplay.textContent = moves;
   }
 
-  // Best score
   if (isZen || isTimed) {
     bestScoreDisplay.textContent = '—';
   } else {
     bestScoreDisplay.textContent = bestScore ? `${bestScore}s` : '—';
   }
 
-  // Power-ups – disabled in Zen mode
   const powerupsDisabled = isZen || isGameOver;
   peekBtn.disabled = powerupsDisabled || peekCount <= 0 || isPeeking;
   timeBtn.disabled = powerupsDisabled || timeCount <= 0;
@@ -211,7 +225,6 @@ function initGame() {
   timerInterval = null;
   isGameOver = false;
   
-  // Reset power-ups
   peekCount = 2;
   timeCount = 2;
   hintCount = 1;
@@ -248,6 +261,7 @@ function initGame() {
 
   renderBoard();
   updateModeUI();
+  updatePowerupButtons();
 }
 
 // ========== SHUFFLE ==========
@@ -335,7 +349,7 @@ function useExtraTime() {
   if (currentMode !== 'timed') return;
 
   timeCount--;
-  timer = Math.max(0, timer - 5); // Add 5 seconds (subtract from elapsed)
+  timer = Math.max(0, timer - 5);
   timerDisplay.textContent = timeLimit - timer;
   updatePowerupButtons();
   
@@ -395,16 +409,13 @@ function handleCardClick(id) {
   SoundManager.flip();
   renderBoard();
 
-  // Start timer on first move (except Zen mode)
   if (moves === 0 && !timerInterval && currentMode !== 'zen') {
     if (currentMode === 'timed') {
-      // Timed mode: countdown
       timerInterval = setInterval(() => {
         timer++;
         const remaining = timeLimit - timer;
         timerDisplay.textContent = remaining;
         
-        // Visual warning when time is low
         if (remaining <= 10) {
           timerDisplay.style.color = '#ff6b6b';
         }
@@ -416,7 +427,6 @@ function handleCardClick(id) {
         }
       }, 1000);
     } else {
-      // Classic mode: count up
       timerInterval = setInterval(() => {
         timer++;
         timerDisplay.textContent = timer;
@@ -453,6 +463,13 @@ function handleCardClick(id) {
         }
         SoundManager.win();
         createConfetti();
+        
+        // 🔄 Refresh power-ups on win
+        peekCount = 2;
+        timeCount = 2;
+        hintCount = 1;
+        updatePowerupButtons();
+        
         setTimeout(() => {
           if (currentMode === 'zen') {
             alert(`🧘 You completed the game in peace!`);
@@ -483,7 +500,6 @@ function gameOver() {
   SoundManager.gameOver();
   timerDisplay.style.color = '#ff6b6b';
   
-  // Flip all cards face down
   cards.forEach(card => {
     if (!card.matched) {
       card.flipped = false;
@@ -506,26 +522,32 @@ function updateBestScore() {
   }
 }
 
-// ========== EVENT LISTENERS ==========
-difficultySelect.addEventListener('change', function() {
-  currentDifficulty = this.value;
+// ========== NAVIGATION EVENTS ==========
+document.getElementById('play-btn').addEventListener('click', () => {
+  showPage('setup-page');
+});
+
+document.getElementById('back-to-start-btn').addEventListener('click', () => {
+  showPage('start-page');
+});
+
+document.getElementById('start-game-btn').addEventListener('click', () => {
+  showPage('game-page');
   initGame();
 });
 
-themeSelect.addEventListener('change', function() {
-  currentTheme = this.value;
-  initGame();
+document.getElementById('back-to-setup-btn').addEventListener('click', () => {
+  clearInterval(timerInterval);
+  timerInterval = null;
+  showPage('setup-page');
 });
 
-modeSelect.addEventListener('change', function() {
-  currentMode = this.value;
-  initGame();
-});
-
+// ========== GAME EVENTS ==========
 resetBtn.addEventListener('click', initGame);
 peekBtn.addEventListener('click', usePeek);
 timeBtn.addEventListener('click', useExtraTime);
 hintBtn.addEventListener('click', useHint);
 
 // ========== START ==========
-initGame();
+setupOptionButtons();
+showPage('start-page');
