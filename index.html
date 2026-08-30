@@ -108,6 +108,14 @@
       </div>
     </div>
   </div>
+<script>
+  // Register Service Worker
+  if ('serviceWorker' in navigator) {
+    navigator.serviceWorker.register('sw.js')
+      .then(() => console.log('✅ Service Worker registered'))
+      .catch((err) => console.error('❌ Service Worker registration failed:', err));
+  }
+</script>
 
   <script src="app.js"></script>
 </body>
