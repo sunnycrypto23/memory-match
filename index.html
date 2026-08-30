@@ -115,6 +115,25 @@
       .catch((err) => console.error('❌ Service Worker registration failed:', err));
   }
 </script>
+  <script>
+  // Trigger the install prompt (optional)
+  let deferredPrompt;
+
+  window.addEventListener('beforeinstallprompt', (e) => {
+    // Prevent the mini-infobar from appearing on mobile
+    e.preventDefault();
+    // Stash the event so it can be triggered later
+    deferredPrompt = e;
+    console.log('✅ Install prompt ready');
+    
+    // Optionally show a custom install button
+    // We'll use this later if needed
+  });
+
+  window.addEventListener('appinstalled', () => {
+    console.log('✅ App installed');
+  });
+  </script>
 
   <script src="app.js"></script>
 </body>
