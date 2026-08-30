@@ -1,3 +1,4 @@
+/* ========== RESET ========== */
 * {
   margin: 0;
   padding: 0;
@@ -15,6 +16,7 @@ body {
   padding: 20px;
 }
 
+/* ========== HEADER ========== */
 header {
   text-align: center;
   margin-bottom: 30px;
@@ -28,6 +30,7 @@ header h1 {
   -webkit-text-fill-color: transparent;
 }
 
+/* ========== STATS ========== */
 .stats {
   display: flex;
   justify-content: center;
@@ -43,15 +46,48 @@ header h1 {
   backdrop-filter: blur(5px);
 }
 
+/* ========== CONTROLS (difficulty + theme) ========== */
+.controls {
+  margin-top: 15px;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 12px;
+  font-size: 1rem;
+  flex-wrap: wrap;
+}
+
+.controls select {
+  background: rgba(255, 255, 255, 0.1);
+  color: #fff;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  padding: 8px 16px;
+  border-radius: 8px;
+  font-size: 1rem;
+  cursor: pointer;
+  backdrop-filter: blur(5px);
+  outline: none;
+}
+
+.controls select:hover {
+  border-color: #ffd700;
+}
+
+.controls select option {
+  background: #1a1a2e;
+  color: #fff;
+}
+
+/* ========== MAIN LAYOUT ========== */
 main {
   max-width: 600px;
   margin: 0 auto;
   text-align: center;
 }
 
+/* ========== GAME BOARD ========== */
 #game-board {
   display: grid;
-  grid-template-columns: repeat(4, 1fr);
   gap: 12px;
   margin-bottom: 25px;
   max-width: 500px;
@@ -59,6 +95,7 @@ main {
   margin-right: auto;
 }
 
+/* ========== CARDS ========== */
 .card {
   aspect-ratio: 1;
   background: linear-gradient(145deg, #2a2a4a, #1a1a3e);
@@ -106,6 +143,50 @@ main {
   50% { transform: scale(1.1); }
 }
 
+/* ========== POWER‑UPS ========== */
+.powerups {
+  display: flex;
+  justify-content: center;
+  gap: 12px;
+  margin-bottom: 20px;
+  flex-wrap: wrap;
+}
+
+.powerup-btn {
+  background: rgba(255, 255, 255, 0.08);
+  border: 2px solid rgba(255, 255, 255, 0.15);
+  color: #fff;
+  padding: 10px 20px;
+  border-radius: 12px;
+  font-size: 0.95rem;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  font-family: inherit;
+  backdrop-filter: blur(5px);
+}
+
+.powerup-btn:hover:not(:disabled) {
+  border-color: #ffd700;
+  background: rgba(255, 215, 0, 0.15);
+  transform: scale(1.05);
+}
+
+.powerup-btn:active:not(:disabled) {
+  transform: scale(0.95);
+}
+
+.powerup-btn:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+  filter: grayscale(0.5);
+}
+
+.powerup-btn.active {
+  border-color: #48dbfb;
+  box-shadow: 0 0 20px rgba(72, 219, 251, 0.3);
+}
+
+/* ========== RESET BUTTON ========== */
 #reset-btn {
   background: linear-gradient(135deg, #f7971e, #ffd200);
   border: none;
@@ -127,6 +208,7 @@ main {
   transform: scale(0.95);
 }
 
+/* ========== RESPONSIVE ========== */
 @media (max-width: 500px) {
   #game-board {
     gap: 8px;
@@ -144,5 +226,24 @@ main {
   .stats {
     font-size: 0.9rem;
     gap: 15px;
+  }
+  
+  .controls {
+    font-size: 0.85rem;
+    gap: 8px;
+  }
+  
+  .controls select {
+    padding: 6px 12px;
+    font-size: 0.85rem;
+  }
+  
+  .powerups {
+    gap: 8px;
+  }
+  
+  .powerup-btn {
+    padding: 8px 14px;
+    font-size: 0.85rem;
   }
 }
