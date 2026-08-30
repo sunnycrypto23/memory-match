@@ -14,10 +14,36 @@
       <span>Time: <span id="timer">0</span>s</span>
       <span>Best: <span id="best-score">—</span></span>
     </div>
+    <div class="controls">
+      <label for="difficulty">Difficulty:</label>
+      <select id="difficulty">
+        <option value="easy">Easy (4×4)</option>
+        <option value="medium" selected>Medium (4×6)</option>
+        <option value="hard">Hard (6×6)</option>
+      </select>
+
+      <label for="theme">Theme:</label>
+      <select id="theme">
+        <option value="animals">🐾 Animals</option>
+        <option value="food" selected>🍕 Food</option>
+        <option value="flags">🏳️ Flags</option>
+        <option value="nature">🌿 Nature</option>
+      </select>
+    </div>
   </header>
 
   <main>
+    <!-- Game Board -->
     <div id="game-board"></div>
+
+    <!-- Power-ups -->
+    <div class="powerups">
+      <button id="peek-btn" class="powerup-btn" disabled>👀 Peek (2)</button>
+      <button id="time-btn" class="powerup-btn" disabled>⏱️ +5s (2)</button>
+      <button id="hint-btn" class="powerup-btn" disabled>💡 Hint (1)</button>
+    </div>
+
+    <!-- Reset Button -->
     <button id="reset-btn">🔄 New Game</button>
   </main>
 
