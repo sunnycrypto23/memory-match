@@ -56,6 +56,11 @@ const SoundManager = {
     notes.forEach((freq, i) => {
       setTimeout(() => this.playTone(freq, 0.2, 'sine', 0.15), i * 120);
     });
+  },
+
+  gameOver() {
+    this.playTone(300, 0.3, 'sawtooth', 0.15);
+    setTimeout(() => this.playTone(200, 0.4, 'sawtooth', 0.15), 150);
   }
 };
 
@@ -119,6 +124,7 @@ let isLocked = false;
 let bestScore = localStorage.getItem('memoryMatchBest') || null;
 let currentDifficulty = 'medium';
 let currentTheme = 'food';
+let currentMode = 'classic';
 
 // Power-up state
 let peekCount = 2;
@@ -126,6 +132,10 @@ let timeCount = 2;
 let hintCount = 1;
 let isPeeking = false;
 let hintTimeout = null;
+
+// Timed mode state
+let timeLimit = 60;
+let isGameOver = false;
 
 // ========== DOM REFS ==========
 const board = document.getElementById('game-board');
@@ -139,6 +149,57 @@ const peekBtn = document.getElementById('peek-btn');
 const timeBtn = document.getElementById('time-btn');
 const hintBtn = document.getElementById('hint-btn');
 
+// ========== ADD MODE SELECTOR TO DOM ==========
+// Add this dynamically since we don't want to modify HTML again
+const controlsDiv = document.querySelector('.controls');
+const modeSelect = document.createElement('select');
+modeSelect.id = 'mode';
+modeSelect.innerHTML = `
+  <option value="classic">🎯 Classic</option>
+  <option value="timed">⏱️ Timed</option>
+  <option value="zen">🧘 Zen</option>
+`;
+const modeLabel = document.createElement('label');
+modeLabel.htmlFor = 'mode';
+modeLabel.textContent = 'Mode:';
+controlsDiv.appendChild(modeLabel);
+controlsDiv.appendChild(modeSelect);
+
+// ========== MODE HELPERS ==========
+function updateModeUI() {
+  const isTimed = currentMode === 'timed';
+  const isZen = currentMode === 'zen';
+  
+  // Timer display
+  if (isTimed) {
+    timerDisplay.textContent = timeLimit - timer;
+  } else if (isZen) {
+    timerDisplay.textContent = '∞';
+  } else {
+    timerDisplay.textContent = timer;
+  }
+
+  // Moves display
+  if (isZen) {
+    movesDisplay.textContent = '—';
+  } else {
+    movesDisplay.textContent = moves;
+  }
+
+  // Best score
+  if (isZen || isTimed) {
+    bestScoreDisplay.textContent = '—';
+  } else {
+    bestScoreDisplay.textContent = bestScore ? `${bestScore}s` : '—';
+  }
+
+  // Power-ups – disabled in Zen mode
+  const powerupsDisabled = isZen || isGameOver;
+  peekBtn.disabled = powerupsDisabled || peekCount <= 0 || isPeeking;
+  timeBtn.disabled = powerupsDisabled || timeCount <= 0;
+  hintBtn.disabled = powerupsDisabled || hintCount <= 0;
+}
+
 // ========== INIT ==========
 function initGame() {
   clearInterval(timerInterval);
@@ -148,6 +209,7 @@ function initGame() {
   flippedCards = [];
   isLocked = false;
   timerInterval = null;
+  isGameOver = false;
   
   // Reset power-ups
   peekCount = 2;
@@ -160,9 +222,8 @@ function initGame() {
   }
 
   movesDisplay.textContent = moves;
-  timerDisplay.textContent = timer;
-  bestScoreDisplay.textContent = bestScore ? `${bestScore}s` : '—';
-  updatePowerupButtons();
+  timerDisplay.textContent = currentMode === 'timed' ? timeLimit : currentMode === 'zen' ? '∞' : '0';
+  bestScoreDisplay.textContent = currentMode === 'classic' ? (bestScore ? `${bestScore}s` : '—') : '—';
 
   const config = DIFFICULTY_CONFIG[currentDifficulty];
   totalPairs = config.pairs;
@@ -186,6 +247,7 @@ function initGame() {
   }));
 
   renderBoard();
+  updateModeUI();
 }
 
 // ========== SHUFFLE ==========
@@ -215,6 +277,16 @@ function renderBoard() {
 
 // ========== POWER-UP HELPERS ==========
 function updatePowerupButtons() {
+  if (currentMode === 'zen' || isGameOver) {
+    peekBtn.textContent = `👀 Peek (${peekCount})`;
+    peekBtn.disabled = true;
+    timeBtn.textContent = `⏱️ +5s (${timeCount})`;
+    timeBtn.disabled = true;
+    hintBtn.textContent = `💡 Hint (${hintCount})`;
+    hintBtn.disabled = true;
+    return;
+  }
+
   peekBtn.textContent = `👀 Peek (${peekCount})`;
   peekBtn.disabled = peekCount <= 0 || isPeeking;
   
@@ -229,12 +301,13 @@ function updatePowerupButtons() {
 function usePeek() {
   if (isPeeking || peekCount <= 0) return;
   if (matchedPairs === totalPairs) return;
+  if (isGameOver) return;
+  if (currentMode === 'zen') return;
 
   peekCount--;
   isPeeking = true;
   updatePowerupButtons();
 
-  // Flip all unmatched cards
   cards.forEach(card => {
     if (!card.matched && !card.flipped) {
       card.flipped = true;
@@ -242,7 +315,6 @@ function usePeek() {
   });
   renderBoard();
 
-  // Flip them back after 1.5 seconds
   setTimeout(() => {
     cards.forEach(card => {
       if (!card.matched && card.flipped) {
@@ -259,13 +331,14 @@ function usePeek() {
 function useExtraTime() {
   if (timeCount <= 0) return;
   if (matchedPairs === totalPairs) return;
+  if (isGameOver) return;
+  if (currentMode !== 'timed') return;
 
   timeCount--;
-  timer += 5;
-  timerDisplay.textContent = timer;
+  timer = Math.max(0, timer - 5); // Add 5 seconds (subtract from elapsed)
+  timerDisplay.textContent = timeLimit - timer;
   updatePowerupButtons();
   
-  // Visual feedback
   timeBtn.style.borderColor = '#48dbfb';
   setTimeout(() => {
     timeBtn.style.borderColor = '';
@@ -277,15 +350,15 @@ function useHint() {
   if (hintCount <= 0) return;
   if (matchedPairs === totalPairs) return;
   if (isLocked) return;
+  if (isGameOver) return;
+  if (currentMode === 'zen') return;
 
   hintCount--;
   updatePowerupButtons();
 
-  // Find first unmatched pair
   const unmatched = cards.filter(c => !c.matched && !c.flipped);
   if (unmatched.length < 2) return;
 
-  // Find two cards with same emoji among unmatched
   let pair = null;
   for (let i = 0; i < unmatched.length; i++) {
     for (let j = i + 1; j < unmatched.length; j++) {
@@ -299,7 +372,6 @@ function useHint() {
 
   if (!pair) return;
 
-  // Flash the pair
   pair.forEach(c => c.flipped = true);
   renderBoard();
 
@@ -312,7 +384,8 @@ function useHint() {
 // ========== GAME LOGIC ==========
 function handleCardClick(id) {
   if (isLocked || matchedPairs === totalPairs) return;
-  if (isPeeking) return; // Can't click while peeking
+  if (isPeeking) return;
+  if (isGameOver) return;
 
   const card = cards.find(c => c.id === id);
   if (!card || card.flipped || card.matched) return;
@@ -322,16 +395,40 @@ function handleCardClick(id) {
   SoundManager.flip();
   renderBoard();
 
-  if (moves === 0 && !timerInterval) {
-    timerInterval = setInterval(() => {
-      timer++;
-      timerDisplay.textContent = timer;
-    }, 1000);
+  // Start timer on first move (except Zen mode)
+  if (moves === 0 && !timerInterval && currentMode !== 'zen') {
+    if (currentMode === 'timed') {
+      // Timed mode: countdown
+      timerInterval = setInterval(() => {
+        timer++;
+        const remaining = timeLimit - timer;
+        timerDisplay.textContent = remaining;
+        
+        // Visual warning when time is low
+        if (remaining <= 10) {
+          timerDisplay.style.color = '#ff6b6b';
+        }
+        
+        if (remaining <= 0) {
+          clearInterval(timerInterval);
+          timerInterval = null;
+          gameOver();
+        }
+      }, 1000);
+    } else {
+      // Classic mode: count up
+      timerInterval = setInterval(() => {
+        timer++;
+        timerDisplay.textContent = timer;
+      }, 1000);
+    }
   }
 
   if (flippedCards.length === 2) {
-    moves++;
-    movesDisplay.textContent = moves;
+    if (currentMode !== 'zen') {
+      moves++;
+      movesDisplay.textContent = moves;
+    }
     isLocked = true;
 
     const [card1, card2] = flippedCards;
@@ -349,11 +446,21 @@ function handleCardClick(id) {
       if (matchedPairs === totalPairs) {
         clearInterval(timerInterval);
         timerInterval = null;
-        updateBestScore();
+        timerDisplay.style.color = '';
+        
+        if (currentMode === 'classic') {
+          updateBestScore();
+        }
         SoundManager.win();
         createConfetti();
         setTimeout(() => {
-          alert(`🎉 You won in ${moves} moves and ${timer} seconds!`);
+          if (currentMode === 'zen') {
+            alert(`🧘 You completed the game in peace!`);
+          } else if (currentMode === 'timed') {
+            alert(`⏱️ You won with ${timeLimit - timer} seconds remaining!`);
+          } else {
+            alert(`🎉 You won in ${moves} moves and ${timer} seconds!`);
+          }
         }, 300);
       }
     } else {
@@ -367,6 +474,27 @@ function handleCardClick(id) {
       }, 800);
     }
   }
+}
+
+// ========== GAME OVER (Timed Mode) ==========
+function gameOver() {
+  isGameOver = true;
+  isLocked = true;
+  SoundManager.gameOver();
+  timerDisplay.style.color = '#ff6b6b';
+  
+  // Flip all cards face down
+  cards.forEach(card => {
+    if (!card.matched) {
+      card.flipped = false;
+    }
+  });
+  renderBoard();
+  
+  setTimeout(() => {
+    alert('⏰ Time is up! Click "New Game" to try again.');
+    timerDisplay.style.color = '';
+  }, 300);
 }
 
 // ========== BEST SCORE ==========
@@ -386,6 +514,11 @@ difficultySelect.addEventListener('change', function() {
 
 themeSelect.addEventListener('change', function() {
   currentTheme = this.value;
+  initGame();
+});
+
+modeSelect.addEventListener('change', function() {
+  currentMode = this.value;
   initGame();
 });
 
